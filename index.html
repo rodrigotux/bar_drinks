@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Máquina de Drinks - Pro Edition</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --neon-blue: #00d2ff;
+            --neon-pink: #ff007f;
+            --neon-green: #39ff14;
+            --neon-orange: #ff6700;
+            --neon-yellow: #ffff00;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg);
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            text-transform: uppercase;
+            text-shadow: 0 0 15px var(--neon-blue);
+            margin: 20px 0 30px 0;
+            letter-spacing: 3px;
+        }
+
+        /* OVERLAYS DISCRETOS */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--neon-orange);
+            color: #000;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: bold;
+            box-shadow: 0 0 20px var(--neon-orange);
+            z-index: 200;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        /* ÍCONES DE GESTÃO */
+        .admin-icon { position: fixed; opacity: 0.15; cursor: pointer; z-index: 50; transition: 0.3s; font-size: 24px; }
+        .admin-icon:hover { opacity: 1; }
+        .stats-icon { top: 20px; right: 20px; } /* Superior Direito */
+        .config-icon { bottom: 20px; right: 20px; } /* Inferior Direito */
+
+        .section-title {
+            grid-column: 1 / -1;
+            font-size: 1.2rem;
+            color: #fff;
+            text-transform: uppercase;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            text-align: left;
+            border-left: 4px solid var(--neon-pink);
+            padding-left: 15px;
+            text-shadow: 0 0 5px var(--neon-pink);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid #fff;
+            color: white;
+            padding: 35px 20px;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn:disabled { opacity: 0.2; cursor: not-allowed; filter: grayscale(1); }
+
+        .btn-gin { border-color: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); }
+        .btn-vodka { border-color: var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); }
+        .btn-sex { border-color: #ff00ff; box-shadow: 0 0 10px #ff00ff; }
+        .btn-mojito { border-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+        .btn-pina { border-color: var(--neon-yellow); box-shadow: 0 0 10px var(--neon-yellow); }
+        .btn-especial { border-color: var(--neon-orange); box-shadow: 0 0 10px var(--neon-orange); }
+
+        .grid-doses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; grid-column: 1 / -1; }
+        .btn-dose { padding: 20px 10px; font-size: 16px; border-radius: 12px; }
+
+        .btn-limpeza { grid-column: 1 / -1; margin-top: 40px; border-color: var(--neon-green); color: var(--neon-green); }
+
+        /* MODAIS */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.95);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #111;
+            padding: 30px;
+            border-radius: 25px;
+            max-width: 450px;
+            width: 85%;
+            border: 2px solid #fff;
+        }
+
+        .modal-details { border-color: var(--neon-blue); box-shadow: 0 0 30px var(--neon-blue); }
+        .modal-instruction { border-color: var(--neon-orange); box-shadow: 0 0 30px var(--neon-orange); }
+        .modal-admin { border-color: var(--neon-yellow); box-shadow: 0 0 30px var(--neon-yellow); }
+
+        .drink-img { width: 100%; height: 250px; object-fit: cover; border-radius: 15px; margin-bottom: 20px; }
+        .btn-group { display: flex; gap: 15px; margin-top: 20px; }
+        .btn-modal { padding: 18px; font-size: 1.1rem; font-weight: bold; border-radius: 12px; cursor: pointer; border: none; text-transform: uppercase; flex: 1; }
+        .btn-back { background: #333; color: white; }
+        .btn-next { background: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue); }
+        .btn-confirmar { background: var(--neon-green); width: 100%; box-shadow: 0 0 20px var(--neon-green); }
+
+        /* RANKING E MANUTENÇÃO */
+        .ranking-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #333; }
+        .ranking-count { color: var(--neon-blue); font-weight: bold; }
+        .btn-zerar { background: transparent; border: 1px solid var(--neon-pink); color: var(--neon-pink); padding: 10px; border-radius: 8px; margin-top: 20px; width: 100%; cursor: pointer; }
+
+        .grid-manutencao { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 20px; }
+        .btn-test { background: #222; border: 1px solid #444; color: white; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .btn-test.active { background: var(--neon-yellow); color: #000; box-shadow: 0 0 15px var(--neon-yellow); }
+
+        #status { margin-top: 30px; font-size: 1.5rem; font-weight: bold; min-height: 2.5rem; }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay" class="loading-overlay">⚙️ MÁQUINA OCUPADA</div>
+
+    <div class="admin-icon stats-icon" onclick="abrirStats()">📊</div>
+    <div class="admin-icon config-icon" onclick="abrirManutencao()">⚙️</div>
+
+    <h1>Máquina de Drinks</h1>
+
+    <div class="grid">
+        <div class="section-title">Coquetéis Premium</div>
+        <button class="btn btn-gin" onclick="mostrarDetalhes('gin_tonica')">🍸 Gin Tônica</button>
+        <button class="btn btn-vodka" onclick="mostrarDetalhes('vodka_juice')">🍹 Vodka Juice</button>
+        <button class="btn btn-sex" onclick="mostrarDetalhes('sex_on_beach')">🌅 Sex on Beach</button>
+        <button class="btn btn-mojito" onclick="mostrarDetalhes('mojito')">🍃 Mojito</button>
+        <button class="btn btn-pina" onclick="mostrarDetalhes('pina_colada')">🥥 Pina Colada</button>
+        <button class="btn btn-especial" onclick="mostrarDetalhes('especial')">🧪 Mix Especial</button>
+
+        <div class="section-title">Doses Rápidas</div>
+        <div class="grid-doses">
+            <button class="btn btn-dose btn-gin" onclick="fazerDrink('dose_gin')">Dose Gin</button>
+            <button class="btn btn-dose btn-vodka" onclick="fazerDrink('dose_vodka')">Dose Vodka</button>
+            <button class="btn btn-dose btn-mojito" onclick="fazerDrink('dose_suco')">Dose Suco</button>
+        </div>
+        
+        <button class="btn btn-limpeza" onclick="limparSistema()">🧼 Limpeza do Sistema</button>
+    </div>
+
+    <div id="modalDetalhes" class="modal">
+        <div class="modal-content modal-details">
+            <img id="detalheImg" src="" class="drink-img">
+            <h2 id="detalheTitulo"></h2>
+            <p id="detalheDesc"></p>
+            <div class="btn-group">
+                <button class="btn-modal btn-back" onclick="fecharModais()">Voltar</button>
+                <button class="btn-modal btn-next" onclick="irParaInstrucao()">Quero esse!</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalInstrucao" class="modal">
+        <div class="modal-content modal-instruction">
+            <h2 style="color: var(--neon-orange)">⚠️ PREPARE-SE</h2>
+            <p>Insira sua <b>Taça</b> com a quantidade de <b>gelo</b> que preferir.</p>
+            <button class="btn-modal btn-confirmar" onclick="confirmarEPreparar()">ESTÁ PRONTO! INICIAR</button>
+        </div>
+    </div>
+
+    <div id="modalStats" class="modal">
+        <div class="modal-content modal-admin" style="border-color: var(--neon-blue); box-shadow: 0 0 30px var(--neon-blue);">
+            <h2 style="color: var(--neon-blue)">RANKING</h2>
+            <div id="listaRanking"></div>
+            <button class="btn-zerar" onclick="zerarStats()">⚠️ ZERAR DADOS</button>
+            <button class="btn-modal btn-back" style="margin-top:15px; width:100%" onclick="fecharModais()">Fechar</button>
+        </div>
+    </div>
+
+    <div id="modalManutencao" class="modal">
+        <div class="modal-content modal-admin">
+            <h2 style="color: var(--neon-yellow)">TESTE DE BOMBAS</h2>
+            <div class="grid-manutencao">
+                <button class="btn-test" onmousedown="controleBomba('bomba1','on')" onmouseup="controleBomba('bomba1','off')" ontouchstart="controleBomba('bomba1','on')" ontouchend="controleBomba('bomba1','off')">B1</button>
+                <button class="btn-test" onmousedown="controleBomba('bomba2','on')" onmouseup="controleBomba('bomba2','off')" ontouchstart="controleBomba('bomba2','on')" ontouchend="controleBomba('bomba2','off')">B2</button>
+                <button class="btn-test" onmousedown="controleBomba('bomba3','on')" onmouseup="controleBomba('bomba3','off')" ontouchstart="controleBomba('bomba3','on')" ontouchend="controleBomba('bomba3','off')">B3</button>
+                <button class="btn-test" onmousedown="controleBomba('bomba4','on')" onmouseup="controleBomba('bomba4','off')" ontouchstart="controleBomba('bomba4','on')" ontouchend="controleBomba('bomba4','off')">B4</button>
+                <button class="btn-test" onmousedown="controleBomba('bomba5','on')" onmouseup="controleBomba('bomba5','off')" ontouchstart="controleBomba('bomba5','on')" ontouchend="controleBomba('bomba5','off')">B5</button>
+                <button class="btn-test" onmousedown="controleBomba('bomba6','on')" onmouseup="controleBomba('bomba6','off')" ontouchstart="controleBomba('bomba6','on')" ontouchend="controleBomba('bomba6','off')">B6</button>
+            </div>
+            <button class="btn-modal btn-back" style="margin-top:20px; width:100%" onclick="fecharModais()">Sair</button>
+        </div>
+    </div>
+
+    <div id="status"></div>
+
+    <script>
+        let drinkSelecionado = "";
+        let ocupado = false;
+
+        const infosDrinks = {
+            "gin_tonica": { titulo: "Gin Tônica", desc: "Refrescante e clássico. Gin, tônica e toque cítrico.", img: "/static/images/gin_tonica.jpg" },
+            "vodka_juice": { titulo: "Vodka Juice", desc: "Vibrante mistura de Vodka com suco de laranja.", img: "/static/images/vodka_juice.jpg" },
+            "sex_on_beach": { titulo: "Sex on the Beach", desc: "Tropical e sedutor. Pêssego, laranja e vodka.", img: "/static/images/sex_on_beach.jpg" },
+            "mojito": { titulo: "Mojito", desc: "Refrescância máxima com hortelã e limão.", img: "/static/images/mojito.jpg" },
+            "pina_colada": { titulo: "Piña Colada", desc: "Sabor do Caribe com abacaxi e coco.", img: "/static/images/pina_colada.jpg" },
+            "especial": { titulo: "Mix Especial", desc: "Receita secreta da casa. Explosão de sabores.", img: "/static/images/especial.jpg" }
+        };
+
+        function alternarTrava(status) {
+            ocupado = status;
+            document.querySelectorAll('.btn').forEach(b => b.disabled = status);
+            document.getElementById('loadingOverlay').style.display = status ? 'block' : 'none';
+        }
+
+        function fecharModais() { document.querySelectorAll('.modal').forEach(m => m.style.display = "none"); }
+
+        function mostrarDetalhes(id) {
+            if (ocupado) return;
+            drinkSelecionado = id;
+            document.getElementById('detalheTitulo').innerText = infosDrinks[id].titulo;
+            document.getElementById('detalheDesc').innerText = infosDrinks[id].desc;
+            document.getElementById('detalheImg').src = infosDrinks[id].img;
+            document.getElementById('modalDetalhes').style.display = "flex";
+        }
+
+        function irParaInstrucao() {
+            fecharModais();
+            document.getElementById('modalInstrucao').style.display = "flex";
+        }
+
+        function confirmarEPreparar() {
+            fecharModais();
+            fazerDrink(drinkSelecionado);
+        }
+
+        function fazerDrink(id) {
+            if (ocupado) return;
+            alternarTrava(true);
+            atualizarStatus("⏳ Preparando...", "var(--neon-blue)");
+
+            fetch('/preparar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: id})
+            })
+            .then(res => res.json())
+            .then(data => atualizarStatus("✅ " + data.msg, "var(--neon-green)"))
+            .catch(() => atualizarStatus("❌ Erro!", "var(--neon-pink)"))
+            .finally(() => alternarTrava(false));
+        }
+
+        function abrirStats() {
+            if (ocupado) return;
+            fetch('/get_stats').then(res => res.json()).then(data => {
+                const lista = document.getElementById('listaRanking');
+                lista.innerHTML = Object.entries(data)
+                    .sort((a,b) => b[1] - a[1])
+                    .map(([id, qtd]) => `<div class="ranking-item"><span>${id.replace('_',' ').toUpperCase()}</span><span class="ranking-count">${qtd}x</span></div>`)
+                    .join('');
+                document.getElementById('modalStats').style.display = "flex";
+            });
+        }
+
+        function zerarStats() {
+            if (confirm("Zerar estatísticas?")) {
+                fetch('/zerar_stats', {method: 'POST'}).then(() => { fecharModais(); alert("Resetado!"); });
+            }
+        }
+
+        function abrirManutencao() { if (!ocupado) document.getElementById('modalManutencao').style.display = "flex"; }
+
+        function controleBomba(id, acao) {
+            const btn = event.target;
+            if (acao === 'on') btn.classList.add('active'); else btn.classList.remove('active');
+            fetch('/testar_bomba', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({bomba: id, acao: acao}) });
+        }
+
+        function atualizarStatus(msg, cor) {
+            const s = document.getElementById('status');
+            s.innerText = msg; s.style.color = cor;
+            if(msg.includes("✅")) setTimeout(() => s.innerText = "", 5000);
+        }
+
+        function limparSistema() {
+            if (ocupado || !confirm("Iniciar limpeza?")) return;
+            alternarTrava(true);
+            atualizarStatus("🌊 Limpando...", "var(--neon-green)");
+            fetch('/limpar', { method: 'POST' }).finally(() => { alternarTrava(false); atualizarStatus("✨ Limpo", "var(--neon-green)"); });
+        }
+    </script>
+</body>
+</html>
